@@ -34,19 +34,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 #include <unistd.h>
 #include <dirent.h>
 
-//#define MODE_RAPIDE
-#define FAST
+#include <sys/stat.h>
 
 #define MAX_PATH 256
+
+typedef struct RPS RPS;
+
+struct RPS		//RenamePageStructure
+{
+	char name[MAX_PATH];
+	bool isPng;
+	RPS * next;
+};
 
 #define crashTemp(string, length) memset(string, 0, length)
 int compare(const void *a, const void *b);
 
 /*Scripts*/
-int configurationEco();
-int zip(char filesToZip[][100], char zipFileName[]);
+int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose);
+int zip(RPS* basePtr, char zipFileName[]);
 
-#ifdef _WIN32
-    char GetCh (void);
-#endif
-
+char getCh();

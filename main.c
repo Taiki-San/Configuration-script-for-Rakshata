@@ -30,6 +30,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 char REPERTOIREEXECUTION[250];
 
+void printHelp()
+{
+	puts("Help:\n");
+	puts("-help		|		print this help");
+	puts("-batch		|		will assume every directory in the current directory contain a chapter, and manage them all at once");
+	puts("-prefix X	|		change the default prefix (Pr) to the one provided afterward (X here)");
+	puts("-AC		|		will ask a confirmation before renaming files and creating the zipfile");
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -40,59 +49,60 @@ int main(int argc, char *argv[])
 	chdir(REPERTOIREEXECUTION);
 #endif
 
-    printf(" -----------------------------------------\n");
-    printf("*                                          *\n");
-    printf("*     Bienvenue dans ce script d'import    *\n");
-    printf("*        Script concu pour Rakshata        *\n");
-    printf("*       Contenu dans le kit d'import       *\n");
-    printf("*   Veuillez ne pas distribuer ce script   *\n");
-    printf("*              Code par Taiki              *\n");
-    printf("*        Libere le 05/03/2013 - 10h        *\n");
-    printf("*                                          *\n");
-    printf(" ------------------------------------------\n\n\n\n");
-
-	bool batchMode = false;
+	bool batchMode = false, askConfirm = false;
+	char prefixArchive[50] = "Pr";
 	
 	for(int pos = 1; pos < argc; pos++)
 	{
 		if(!strcmp(argv[pos], "-batch"))
 			batchMode = true;
+		
+		else if(!strcmp(argv[pos], "-prefix") && pos+1 < argc)
+			strncpy(prefixArchive, argv[++pos], 50);
+		
+		else if(!strcmp(argv[pos], "-AC"))
+			askConfirm = true;
+		
+		else if(!strcmp(argv[pos], "-help"))
+		{
+			printHelp();
+			return 0;
+		}
 	}
 
-#ifdef MODE_RAPIDE
-    DIR *directory, *test;           /* pointeur de répertoire */
-    struct dirent *entry;     /* représente une entrée dans un répertoire. */
-    directory = opendir(REPERTOIREEXECUTION);
+	if(batchMode)
+	{
+		DIR *directory, *test;			//directory pointer
+		struct dirent *entry;			//a single directory entry
+		char basePath[0x100];
+		char archiveName[0x180];
+		
+		mkdir("zip_files", 0750);
+		directory = opendir(".");
+		
+		while ((entry = readdir(directory)) != NULL)
+		{
+			if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..") || !strcmp(entry->d_name, "zip_files"))
+				continue;
+			
+			if((test = opendir(entry->d_name)) != NULL)	//Directory is accessible
+			{
+				closedir(test);
+				strncpy(basePath, entry->d_name, sizeof(basePath));
+				snprintf(archiveName, sizeof(archiveName), "../zip_files/%s_Chapitre_%s.zip", prefixArchive, entry->d_name);
+				worker(basePath, archiveName, askConfirm, askConfirm);
+			}
+		}
+		closedir(directory);
 
-    /* On boucle sur les entrées du dossier. */
-    while ( (entry = readdir(directory)) != NULL )
-    {
-        if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")
-           || !strcmp(entry->d_name, "zip_files") || !strcmp(entry->d_name, "zip") || !strcmp(entry->d_name, "obj"))
-            continue;
+	}
+	else
+	{
+		char archiveName[0x100];
+		snprintf(archiveName, sizeof(archiveName), "%s_Chapitre_X.zip", prefixArchive);
+		worker(".", archiveName, askConfirm, askConfirm);
+	}
 
-        if((test = opendir(entry->d_name)) != NULL)
-        {
-            closedir(test);
-            char temp[1000];
-            snprintf(temp, 1000, "%s\\%s", REPERTOIREEXECUTION, entry->d_name);
-            chdir(temp);
-
-            configurationEco();
-            snprintf(temp, 1000, "FT_Chapitre_%s.zip", entry->d_name);
-            rename("Pr_Chapitre_X.zip", temp);
-
-            snprintf(temp, 1000, "move \"%s\\%s\\FT_Chapitre_%s.zip\" \"%s\\zip_files\\\"", REPERTOIREEXECUTION, entry->d_name, entry->d_name, REPERTOIREEXECUTION);
-            system(temp);
-            chdir(REPERTOIREEXECUTION);
-
-        }
-    }
-    closedir(directory);
-#else
-    configurationEco();
-#endif
-    while(1);
     return 0;
 }
 

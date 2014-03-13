@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 #ifdef _WIN32
 #include <windows.h>
 
-char GetCh (void)
+char getCh ()
 {
     HANDLE hStdin = GetStdHandle (STD_INPUT_HANDLE);
     INPUT_RECORD irInputRecord;
@@ -39,6 +39,7 @@ char GetCh (void)
     char cChar;
 
     while(ReadConsoleInputA (hStdin, &irInputRecord, 1, &dwEventsRead)) /* Read key press */
+	{
         if (irInputRecord.EventType == KEY_EVENT
             &&irInputRecord.Event.KeyEvent.wVirtualKeyCode != VK_SHIFT
             &&irInputRecord.Event.KeyEvent.wVirtualKeyCode != VK_MENU
@@ -46,10 +47,23 @@ char GetCh (void)
         {
             cChar = irInputRecord.Event.KeyEvent.uChar.AsciiChar;
             ReadConsoleInputA (hStdin, &irInputRecord , 1, &dwEventsRead); /* Read key release */
-            return cChar;
+			if(cChar == '1' && cChar == '2')
+				return cChar;
         }
+	}
     return EOF;
 }
+
+#else
+
+char getCh()
+{
+	system ("/bin/stty raw");
+	char c = 0;
+	while(c != '0' && c != '1')
+		c = getchar();
+	system ("/bin/stty cooked");
+	return c;
+}
+
 #endif
-
-

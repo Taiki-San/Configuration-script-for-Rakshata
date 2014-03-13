@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+#include "main.h"
 
 /* These are defined as macros to make it easier to adapt this code to
  * different characters types or comparison functions. */
@@ -166,7 +167,7 @@ static int strnatcmp(char const *a, char const *b) {
 
 int compare(const void *a, const void *b)
 {
-     const char *pa = a;
-     const char *pb = b;
-	 return strnatcmp(pa, pb);
+     const RPS *pa = a;
+     const RPS *pb = b;
+	 return strnatcmp(pa->name, pb->name);
 }

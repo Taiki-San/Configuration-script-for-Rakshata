@@ -46,6 +46,7 @@
 #endif
 
 #include "zip.h"
+#include "main.h"
 
 #ifdef _WIN32
         #define USEWIN32IOAPI
@@ -205,7 +206,7 @@ int isLargeFile(const char* filename)
  return largeFile;
 }
 
-int zip(char filesToZip[][100], char zipFileName[])
+int zip(RPS* basePtr, char zipFileName[])
 {
     int i;
     int opt_overwrite=2;
@@ -260,7 +261,7 @@ int zip(char filesToZip[][100], char zipFileName[])
 	else
 		printf("creating %s\n",filename_try);
 
-	for (i = 0; filesToZip[i][0] && err==ZIP_OK; i++)
+	for (; basePtr && err==ZIP_OK; basePtr = basePtr->next)
 	{
 		FILE * fin = NULL;
 		int size_read;
@@ -273,16 +274,16 @@ int zip(char filesToZip[][100], char zipFileName[])
 		zi.dosDate = 0;
 		zi.internal_fa = 0;
 		zi.external_fa = 0;
-		filetime(filesToZip[i],&zi.tmz_date,&zi.dosDate);
+		filetime(basePtr->name,&zi.tmz_date,&zi.dosDate);
 
 		if ((password != NULL) && (err==ZIP_OK))
-			err = getFileCrc(filesToZip[i],buf,size_buf,&crcFile);
+			err = getFileCrc(basePtr->name,buf,size_buf,&crcFile);
 
-		zip64 = isLargeFile(filesToZip[i]);
+		zip64 = isLargeFile(basePtr->name);
 
 	   /* The path name saved, should not include a leading slash. */
 	   /*if it did, windows/xp and dynazip couldn't read the zip file. */
-		 savefilenameinzip = filesToZip[i];
+		 savefilenameinzip = basePtr->name;
 
 		 while( savefilenameinzip[0] == '\\' || savefilenameinzip[0] == '/' )
 			 savefilenameinzip++;
@@ -314,53 +315,52 @@ int zip(char filesToZip[][100], char zipFileName[])
 						 password,crcFile, zip64);
 
 		if (err != ZIP_OK)
-			printf("error in opening %s in zipfile\n",filesToZip[i]);
+			printf("error in opening %s in zipfile\n",basePtr->name);
 		else
 		{
-			fin = fopen64(filesToZip[i],"rb");
+			fin = fopen64(basePtr->name,"rb");
 			if (fin==NULL)
 			{
 				err=ZIP_ERRNO;
-				printf("error in opening %s for reading\n",filesToZip[i]);
+				printf("error in opening %s for reading\n",basePtr->name);
 			}
 		}
 
 		if (err == ZIP_OK)
+		{
 			do
 			{
 				err = ZIP_OK;
 				size_read = (int)fread(buf,1,size_buf,fin);
 				if (size_read < size_buf)
 					if (feof(fin)==0)
-				{
-					printf("error in reading %s\n",filesToZip[i]);
-					err = ZIP_ERRNO;
-				}
-
+					{
+						printf("error in reading %s\n",basePtr->name);
+						err = ZIP_ERRNO;
+					}
+				
 				if (size_read>0)
 				{
 					err = zipWriteInFileInZip (zf,buf,size_read);
 					if (err<0)
-						printf("error in writing %s in the zipfile\n", filesToZip[i]);
-
+						printf("error in writing %s in the zipfile\n", basePtr->name);
+					
 				}
-			} while ((err == ZIP_OK) && (size_read>0));
+			} while (err == ZIP_OK && size_read > 0);
+		}
 
 		if (fin != NULL)
 			fclose(fin);
 
 		if (err<0)
 			err=ZIP_ERRNO;
-		else
-		{
-			err = zipCloseFileInZip(zf);
-			if (err!=ZIP_OK)
-				printf("error in closing %s in the zipfile\n", filesToZip[i]);
-		}
+		else if ((err = zipCloseFileInZip(zf)) !=ZIP_OK)
+			printf("error in closing %s in the zipfile\n", basePtr->name);
 	}
 	errclose = zipClose(zf,NULL);
 	if (errclose != ZIP_OK)
 		printf("error in closing %s\n",filename_try);
+	
     free(buf);
     return 0;
 }

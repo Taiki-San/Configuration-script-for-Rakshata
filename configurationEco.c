@@ -28,193 +28,174 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 #include "main.h"
 
-int configurationEco()
+int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 {
-    int i = 1, j = 0, nombrePagePng = 0, verificationExtansion = 0, nombrePage = 0;
-    int pagesPNG[500];
-    char temp[100], nomPagesRenommage[500][MAX_PATH], path[500];
     FILE* config = NULL;
-
-	memset(nomPagesRenommage, 0, 500*MAX_PATH);
-    for(i = 0; i < 500; nomPagesRenommage[i++][0] = 0);
-
-    getcwd(path, 500);
+	uint nbElem, length, i;
+	uint64_t lengthInput = strlen(basePath);
+	bool keepRunning = false, jpgOnly;
+	char path[2][lengthInput + MAX_PATH], *localString;
+	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr;	//We have a small logic issue that will make us allocate one extra entry, but no leak, so not critical
+	
 
     //Initialisateurs pour le renommage de chapitre
     struct dirent *ent;
     DIR *dir;
 
-#ifdef FAST
-start:
-#endif
+	do
+	{
+		dir = opendir (basePath);
+		if (dir != NULL)
+		{
+			nbElem = 0;
+			jpgOnly = true;
 
-    dir = opendir (path);
+			while((ent = readdir (dir)) != NULL)
+			{
+				if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+					continue;
+				
+				if(curPtr == NULL)
+				{
+					printf("Memory error, abort D:");
+					exit(EXIT_FAILURE);
+				}
 
-    pagesPNG[0] = -1;
+				localString = curPtr->name;					//This prevent the CPU to dereference the ptr each time
+				strncpy(localString, ent->d_name, MAX_PATH);
+				
+				for(length = 0; localString[length]; length++) //On compte le nombre de caractère et on en profite pour virer la casse
+				{
+					if(localString[length] >= 'A' && localString[length] <= 'Z')
+						localString[length] = localString[length] - ('A' - 'a');
+				}
+				
+				if((length > 4 && localString[length-4] != '.') || (length > 5 && localString[length-5] != '.'))	//Check ext (4 = x.jpg/png, 5 = x.jpeg)
+					continue;
+				
+				if(localString[length-4] == '.')
+				{
+					if(!strcmp(&localString[length-4], "png"))
+					{
+						curPtr->isPng = true;
+						jpgOnly = false;
+					}
+					else if(!strcmp(&localString[length-4], "jpg"))
+						curPtr->isPng = false;
+					else
+						continue;
+				}
+				else
+				{
+					if(!strcmp(&localString[length-5], "jpeg"))
+						curPtr->isPng = false;
+					else
+						continue;
+				}
+				
+				curPtr->next = malloc(sizeof(RPS));
+				curPtr = curPtr->next;
+				curPtr->next = NULL;
+				nbElem++;
+			}
+			closedir (dir);
+			
+			qsort(basePtr, nbElem, sizeof(RPS), compare);
+			
+			if(verbose)
+			{
+				puts("Fichiers classe:\n");
+				for(curPtr = basePtr,  i = 0; curPtr; i++, curPtr = curPtr->next)
+					printf("%d. %s\n", i+1, curPtr->name);
+								
+				if(askConfirm)
+				{
+					puts("\n\nConfirmez vous? 1. Oui, 2. Non\n");
 
-    if (dir != NULL)
-    {
-        for (i = 0; (ent = readdir (dir)) != NULL; i++)
-        {
-            if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
-            {
-                i--;
-                continue;
-            }
-            strcpy(nomPagesRenommage[i], ent->d_name);
+					char c = getCh();
 
-            for(j = 0; nomPagesRenommage[i][j] != 0; j++) //On compte le nombre de caractËre et on en profite pour virer la casse
-            {
-                if(nomPagesRenommage[i][j] >= 'A' && nomPagesRenommage[i][j] <= 'Z')
-                    nomPagesRenommage[i][j] = nomPagesRenommage[i][j] - ('A' - 'a');
-            }
+					if(c == '2')
+					{
+						puts("Tapez enter quand les modifications seront termines\n");
+						getchar();
+						putc('\n', stdout);
+						keepRunning = true;
+					}
+					else
+						keepRunning = false;
+				}
+				else
+					puts("\n\n");
+			}
+		
+			for(i = 0, curPtr = basePtr; curPtr; i++, curPtr = curPtr->next)
+			{
+				snprintf(path[0], sizeof(path), "%s/%s", basePath, curPtr->name);
 
-            for(verificationExtansion = j; j - verificationExtansion <= 5 && nomPagesRenommage[i][verificationExtansion] != '.' && verificationExtansion > 0; verificationExtansion--); //Si pas d'extansion
+				if(curPtr->isPng)
+					snprintf(path[1], sizeof(path), "%s/%d.png", basePath, i);
+				else
+					snprintf(path[1], sizeof(path), "%s/%d.jpg", basePath, i);
+				
+				rename(path[0], path[1]);
+				strncpy(curPtr->name, &path[1][lengthInput+1], sizeof(curPtr->name));
+			}
+		}
+		else
+			nbElem = jpgOnly = 0;
+		
+	} while (askConfirm && keepRunning);
+	
+	if(!nbElem)
+	{
+		puts("Aucune page valide trouvée :/\n");
+		return 0;
+	}
+	
+	snprintf(path[0], sizeof(path[0]), "%s/config.dat", basePath);
+	config = fopen(path[0], "w+");
+	
+	if(config == NULL)
+	{
+		puts("Failed at open config file");
+		return 0;
+	}
+	
+	if(jpgOnly)
+        fprintf(config, "%d", nbElem-1);
 
-            if(nomPagesRenommage[i][verificationExtansion] == '.') //VÈrifie que le format est supportÈ
-            {
-                if(nomPagesRenommage[i][++verificationExtansion] == 'p' || nomPagesRenommage[i][verificationExtansion] == 'j')
-                {
-                    if(nomPagesRenommage[i][++verificationExtansion] == 'n' || nomPagesRenommage[i][verificationExtansion] == 'p')
-                    {
-                        if(nomPagesRenommage[i][++verificationExtansion] == 'g')
-                        {
-                            if(nomPagesRenommage[i][verificationExtansion - 2] == 'p') //On vÈrifie la premiËre lettre de l'extansion
-                            {
-                                pagesPNG[i]= 1;
-                                nombrePagePng = 1;
-                                verificationExtansion = -1;
-                            }
-                            else if (nomPagesRenommage[i][verificationExtansion - 2] == 'j') //On vÈrifie la premiËre lettre de l'extansion
-                            {
-                                pagesPNG[i]= 0;
-                                verificationExtansion = -1;
-                            }
-                            pagesPNG[i + 1]= -1;
-                        }
-                    }
-                }
-                if(verificationExtansion == -1) //Format supportÈ
-                    verificationExtansion = j;
-                else                            //Sinon
-                    verificationExtansion = 0;
-            }
+	else
+	{
+		fprintf(config, "%d\nN", nbElem);
+		for(curPtr = basePtr, i = 0; curPtr; curPtr = curPtr->next, i++)
+			fprintf(config, "\n%d %s", i+1, curPtr->name);
+	}
+	
+	fclose(config);
 
-            if(nomPagesRenommage[i][0] == '.' || (j - verificationExtansion > 5 || verificationExtansion == 0))
-            {
-                for(j = 0; j < 100; j++)
-                    nomPagesRenommage[i][j] = 0;
-                i--;
-            }
-        }
-        closedir (dir);
+    
+	if(verbose)
+	{
+		puts("Renommage termine. Compression prete au lancement.\n");
+		printf("L'archive sera nomee %s. Remplacez Pr par \n", archiveName);
+	}
+	
+	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next);	//On va à la fin de la liste
+	
+	curPtr->next = malloc(sizeof(RPS));								//On ajoute le config.dat à la liste
+	if(curPtr->next == NULL)
+	{
+		printf("Memory error, abort D:");
+		exit(EXIT_FAILURE);
+	}
+	
+	curPtr = curPtr->next;
+	strncpy(curPtr->name, "config.dat", sizeof(curPtr->name));
 
-        qsort(nomPagesRenommage, i, sizeof(nomPagesRenommage[0]), compare);
-
-#ifndef MODE_RAPIDE
-        printf("Fichiers classe:\n");
-        for(i = 0; nomPagesRenommage[i][0]; i++)
-            printf("%d. %s\n", i+1, nomPagesRenommage[i]);
-
-        printf("\n\nConfirmez vous? 1. Oui, 2. Non\n");
-#ifndef FAST
-        #ifdef _WIN32 //Récupère la lettre sans avoir à presser enter
-            char c = 0;
-            while(c != '1' && c != '2')
-                c = GetCh();
-        #else
-            system ("/bin/stty raw");
-            char c = 0;
-            while(c != '0' && c != '1')
-                c = getchar();
-            system ("/bin/stty cooked");
-        #endif
-
-        if(c == '2')
-        {
-            printf("Tappez enter quand les modifications seront termines\n");
-            getchar();
-            printf("\n");
-            goto start;
-        }
-#endif
-#endif
-
-        for(i = 0; nomPagesRenommage[i][0] != 0; i++)
-        {
-            crashTemp(temp, 100);
-            if(pagesPNG[i]) //Si c'est un png
-                sprintf(temp, "%d.png", i);
-            else //Si c'est un jpg
-                sprintf(temp, "%d.jpg", i);
-            rename(nomPagesRenommage[i], temp);
-        }
-    }
-
-    nombrePage = i;
-
-    if(nombrePage > 5000)
-        printf("Trop de page o_o Vous aurez à compresser vous même\n");
-
-    char nomFichiers[5001][100];
-
-    //Ecriture de config.dat
-    if(nombrePagePng) //Si il y a des png
-    {
-        config = fopen("config.dat", "w+");
-        fprintf(config, "%d\nN", nombrePage);
-        for(i = 0; i < nombrePage; i++)
-        {
-            if(pagesPNG[i])
-            {
-                fprintf(config, "\n%d %d.png", i + 1, i);
-                sprintf(nomFichiers[i], "%d.png", i);
-            }
-            else
-            {
-                fprintf(config, "\n%d %d.jpg", i + 1, i);
-                sprintf(nomFichiers[i], "%d.jpg", i);
-            }
-        }
-        fclose(config);
-    }
-    else
-    {
-        config = fopen("config.dat", "w+");
-        fprintf(config, "%d", nombrePage - 1);
-        fclose(config);
-
-        for(i = 0; i < nombrePage; i++)
-            sprintf(nomFichiers[i], "%d.jpg", i);
-
-    }
-
-    if(nombrePage <= 5000)
-    {
-#ifndef MODE_RAPIDE
-        printf("Renommage termine. Compression prete au lancement.\n");
-        printf("L'archive sera nomee Pr_Chapitre_X.zip. Remplacez Pr par \n");
-        printf("le nom du projet et X par le chapitre quand ce sera termine.\n");
-#endif
-
-        sprintf(nomFichiers[i++], "config.dat");
-        nomFichiers[i][0] = 0;
-
-        zip(nomFichiers, "Pr_Chapitre_X.zip");
-
-        printf("\nTermine.");
-    }
-
-#ifndef MODE_RAPIDE
-    printf("\n\nDone o/");
-    #ifdef _WIN32 //Récupère la lettre sans avoir à presser enter
-        GetCh();
-    #else
-        system ("/bin/stty raw");
-        getchar();
-        system ("/bin/stty cooked");
-    #endif
-#endif
-    return 0;
+	snprintf(path[0], sizeof(path[0]), "%s/%s", basePath, archiveName);	//On modifie le path de l'archive
+	zip(basePtr, path[0]);
+	
+	printf("\nTermine.");
+	return 0;
 }
 
