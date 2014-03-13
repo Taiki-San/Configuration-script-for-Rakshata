@@ -1,4 +1,4 @@
-/**Copyright (c) 2013, Taiki
+/**Copyright (c) 2011-2014, Taiki
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -11,7 +11,7 @@ are permitted provided that the following conditions are met:
   list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
-* Neither the name of the {organization} nor the names of its
+* Neither the name of Mavy nor the names of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -32,9 +32,10 @@ int configurationEco()
 {
     int i = 1, j = 0, nombrePagePng = 0, verificationExtansion = 0, nombrePage = 0;
     int pagesPNG[500];
-    char temp[100], nomPagesRenommage[500][100], path[500];
+    char temp[100], nomPagesRenommage[500][MAX_PATH], path[500];
     FILE* config = NULL;
 
+	memset(nomPagesRenommage, 0, 500*MAX_PATH);
     for(i = 0; i < 500; nomPagesRenommage[i++][0] = 0);
 
     getcwd(path, 500);
@@ -60,7 +61,7 @@ start:
                 i--;
                 continue;
             }
-            sprintf (nomPagesRenommage[i], ent->d_name);
+            strcpy(nomPagesRenommage[i], ent->d_name);
 
             for(j = 0; nomPagesRenommage[i][j] != 0; j++) //On compte le nombre de caractËre et on en profite pour virer la casse
             {

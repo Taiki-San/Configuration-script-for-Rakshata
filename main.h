@@ -1,4 +1,4 @@
-/**Copyright (c) 2013, Taiki
+/**Copyright (c) 2011-2014, Taiki
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -11,7 +11,7 @@ are permitted provided that the following conditions are met:
   list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
-* Neither the name of the {organization} nor the names of its
+* Neither the name of Mavy nor the names of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -29,10 +29,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <dirent.h>
+
 //#define MODE_RAPIDE
 #define FAST
+
+#define MAX_PATH 256
 
 #define crashTemp(string, length) memset(string, 0, length)
 int compare(const void *a, const void *b);

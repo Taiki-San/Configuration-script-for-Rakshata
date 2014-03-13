@@ -1,4 +1,4 @@
-/**Copyright (c) 2013, Taiki
+/**Copyright (c) 2011-2014, Taiki
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -11,7 +11,7 @@ are permitted provided that the following conditions are met:
   list of conditions and the following disclaimer in the documentation and/or
   other materials provided with the distribution.
 
-* Neither the name of the {organization} nor the names of its
+* Neither the name of Mavy nor the names of its
   contributors may be used to endorse or promote products derived from
   this software without specific prior written permission.
 
@@ -35,9 +35,8 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
 	getcwd(REPERTOIREEXECUTION, sizeof(REPERTOIREEXECUTION));
 #else
-    int i = 0;
-    sprintf(REPERTOIREEXECUTION, argv[0]);
-	for(i = strlen(REPERTOIREEXECUTION); REPERTOIREEXECUTION[i] != '/'; REPERTOIREEXECUTION[i--] = 0);
+    strncpy(REPERTOIREEXECUTION, argv[0], sizeof(REPERTOIREEXECUTION));
+	for(uint64_t i = strlen(REPERTOIREEXECUTION); REPERTOIREEXECUTION[i] != '/'; REPERTOIREEXECUTION[i--] = 0);
 	chdir(REPERTOIREEXECUTION);
 #endif
 
@@ -51,6 +50,14 @@ int main(int argc, char *argv[])
     printf("*        Libere le 05/03/2013 - 10h        *\n");
     printf("*                                          *\n");
     printf(" ------------------------------------------\n\n\n\n");
+
+	bool batchMode = false;
+	
+	for(int pos = 1; pos < argc; pos++)
+	{
+		if(!strcmp(argv[pos], "-batch"))
+			batchMode = true;
+	}
 
 #ifdef MODE_RAPIDE
     DIR *directory, *test;           /* pointeur de répertoire */
