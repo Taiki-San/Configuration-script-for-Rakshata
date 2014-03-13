@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	chdir(REPERTOIREEXECUTION);
 #endif
 
-	bool batchMode = false, askConfirm = false;
+	bool batchMode = true, askConfirm = false;
 	char prefixArchive[50] = "Pr";
 	
 	for(int pos = 1; pos < argc; pos++)

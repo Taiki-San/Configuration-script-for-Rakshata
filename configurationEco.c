@@ -70,24 +70,24 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 						localString[length] = localString[length] - ('A' - 'a');
 				}
 				
-				if((length > 4 && localString[length-4] != '.') || (length > 5 && localString[length-5] != '.'))	//Check ext (4 = x.jpg/png, 5 = x.jpeg)
+				if((length < 4 || localString[length-4] != '.') && (length < 5 || localString[length-5] != '.'))	//Check ext (4 = x.jpg/png, 5 = x.jpeg)
 					continue;
 				
 				if(localString[length-4] == '.')
 				{
-					if(!strcmp(&localString[length-4], "png"))
+					if(!strcmp(&localString[length-3], "png"))
 					{
 						curPtr->isPng = true;
 						jpgOnly = false;
 					}
-					else if(!strcmp(&localString[length-4], "jpg"))
+					else if(!strcmp(&localString[length-3], "jpg"))
 						curPtr->isPng = false;
 					else
 						continue;
 				}
 				else
 				{
-					if(!strcmp(&localString[length-5], "jpeg"))
+					if(!strcmp(&localString[length-4], "jpeg"))
 						curPtr->isPng = false;
 					else
 						continue;
@@ -95,50 +95,71 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 				
 				curPtr->next = malloc(sizeof(RPS));
 				curPtr = curPtr->next;
-				curPtr->next = NULL;
 				nbElem++;
 			}
+			if(curPtr != NULL)
+				curPtr->next = NULL;
+						
 			closedir (dir);
 			
-			qsort(basePtr, nbElem, sizeof(RPS), compare);
-			
-			if(verbose)
+			if (nbElem)
 			{
-				puts("Fichiers classe:\n");
-				for(curPtr = basePtr,  i = 0; curPtr; i++, curPtr = curPtr->next)
-					printf("%d. %s\n", i+1, curPtr->name);
-								
-				if(askConfirm)
+				RPS* buf[nbElem];
+				for (i = 0, curPtr = basePtr; curPtr->next != NULL; curPtr = curPtr->next, i++)
+					buf[i] = curPtr;
+				
+				printf("%p - %lu - %s\n", buf[0], sizeof(buf[0]), buf[0]->name);
+				qsort(buf, i, sizeof(RPS*), compare);
+				
+				for (i = 0, basePtr = curPtr; i < nbElem; curPtr = curPtr->next, i++)
 				{
-					puts("\n\nConfirmez vous? 1. Oui, 2. Non\n");
-
-					char c = getCh();
-
-					if(c == '2')
+					curPtr = buf[i];
+					puts(curPtr->name);
+				}
+				puts("Ok");
+				exit(0);
+				
+				curPtr = buf[i];
+				curPtr->next = NULL;
+				
+				if(verbose)
+				{
+					puts("Fichiers classe:\n");
+					for(curPtr = basePtr,  i = 0; curPtr; i++, curPtr = curPtr->next)
+						printf("%d. %s\n", i+1, curPtr->name);
+					
+					if(askConfirm)
 					{
-						puts("Tapez enter quand les modifications seront termines\n");
-						getchar();
-						putc('\n', stdout);
-						keepRunning = true;
+						puts("\n\nConfirmez vous? 1. Oui, 2. Non\n");
+						
+						char c = getCh();
+						
+						if(c == '2')
+						{
+							puts("Tapez enter quand les modifications seront termines\n");
+							getchar();
+							putc('\n', stdout);
+							keepRunning = true;
+						}
+						else
+							keepRunning = false;
 					}
 					else
-						keepRunning = false;
+						puts("\n\n");
 				}
-				else
-					puts("\n\n");
-			}
-		
-			for(i = 0, curPtr = basePtr; curPtr; i++, curPtr = curPtr->next)
-			{
-				snprintf(path[0], sizeof(path), "%s/%s", basePath, curPtr->name);
-
-				if(curPtr->isPng)
-					snprintf(path[1], sizeof(path), "%s/%d.png", basePath, i);
-				else
-					snprintf(path[1], sizeof(path), "%s/%d.jpg", basePath, i);
 				
-				rename(path[0], path[1]);
-				strncpy(curPtr->name, &path[1][lengthInput+1], sizeof(curPtr->name));
+				for(i = 0, curPtr = basePtr; curPtr; i++, curPtr = curPtr->next)
+				{
+					snprintf(path[0], sizeof(path), "%s/%s", basePath, curPtr->name);
+					
+					if(curPtr->isPng)
+						snprintf(path[1], sizeof(path), "%s/%d.png", basePath, i);
+					else
+						snprintf(path[1], sizeof(path), "%s/%d.jpg", basePath, i);
+					
+					rename(path[0], path[1]);
+					strncpy(curPtr->name, &path[1][lengthInput+1], sizeof(curPtr->name));
+				}
 			}
 		}
 		else
@@ -180,7 +201,11 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 		printf("L'archive sera nomee %s. Remplacez Pr par \n", archiveName);
 	}
 	
-	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next);	//On va à la fin de la liste
+	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next)	//On va à la fin de la liste
+	{
+		puts(curPtr->name);
+	}
+	puts("\n\n");
 	
 	curPtr->next = malloc(sizeof(RPS));								//On ajoute le config.dat à la liste
 	if(curPtr->next == NULL)
@@ -193,7 +218,14 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	strncpy(curPtr->name, "config.dat", sizeof(curPtr->name));
 
 	snprintf(path[0], sizeof(path[0]), "%s/%s", basePath, archiveName);	//On modifie le path de l'archive
-	zip(basePtr, path[0]);
+	zip(basePath, basePtr, path[0]);
+	
+	void* buf;
+	for (curPtr = basePtr; curPtr; curPtr = buf)
+	{
+		buf = curPtr->next;
+		free(curPtr);
+	}
 	
 	printf("\nTermine.");
 	return 0;

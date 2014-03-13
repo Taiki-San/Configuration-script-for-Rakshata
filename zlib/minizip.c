@@ -206,8 +206,10 @@ int isLargeFile(const char* filename)
  return largeFile;
 }
 
-int zip(RPS* basePtr, char zipFileName[])
+int zip(char* basePath, RPS* basePtr, char* zipFileName)
 {
+	uint64_t lengthBase = strlen(basePath);
+	char path[lengthBase + MAX_PATH];
     int i;
     int opt_overwrite=2;
     int opt_compress_level=Z_DEFAULT_COMPRESSION;
@@ -269,21 +271,25 @@ int zip(RPS* basePtr, char zipFileName[])
 		zip_fileinfo zi;
 		unsigned long crcFile=0;
 		int zip64 = 0;
+		
+		puts(basePtr->name);
+		
+		snprintf(path, sizeof(path), "%s/%s", basePath, basePtr->name);
 
 		zi.tmz_date.tm_sec = zi.tmz_date.tm_min = zi.tmz_date.tm_hour =  zi.tmz_date.tm_mday = zi.tmz_date.tm_mon = zi.tmz_date.tm_year = 0;
 		zi.dosDate = 0;
 		zi.internal_fa = 0;
 		zi.external_fa = 0;
-		filetime(basePtr->name,&zi.tmz_date,&zi.dosDate);
+		filetime(path, &zi.tmz_date, &zi.dosDate);
 
 		if ((password != NULL) && (err==ZIP_OK))
-			err = getFileCrc(basePtr->name,buf,size_buf,&crcFile);
+			err = getFileCrc(path, buf, size_buf, &crcFile);
 
-		zip64 = isLargeFile(basePtr->name);
+		zip64 = isLargeFile(path);
 
 	   /* The path name saved, should not include a leading slash. */
 	   /*if it did, windows/xp and dynazip couldn't read the zip file. */
-		 savefilenameinzip = basePtr->name;
+		 savefilenameinzip = path;
 
 		 while( savefilenameinzip[0] == '\\' || savefilenameinzip[0] == '/' )
 			 savefilenameinzip++;
@@ -307,22 +313,17 @@ int zip(RPS* basePtr, char zipFileName[])
 		 }
 
 		 /**/
-		err = zipOpenNewFileInZip3_64(zf,savefilenameinzip,&zi,
-						 NULL,0,NULL,0,NULL /* comment*/,
-						 (opt_compress_level != 0) ? Z_DEFLATED : 0,
-						 opt_compress_level,0,
-						 -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
-						 password,crcFile, zip64);
+		err = zipOpenNewFileInZip3_64(zf,savefilenameinzip,&zi,NULL,0,NULL,0,NULL,(opt_compress_level != 0) ? Z_DEFLATED : 0,opt_compress_level,0,-MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,password,crcFile, zip64);
 
 		if (err != ZIP_OK)
-			printf("error in opening %s in zipfile\n",basePtr->name);
+			printf("error in opening %s in zipfile\n",path);
 		else
 		{
-			fin = fopen64(basePtr->name,"rb");
+			fin = fopen64(path,"rb");
 			if (fin==NULL)
 			{
 				err=ZIP_ERRNO;
-				printf("error in opening %s for reading\n",basePtr->name);
+				printf("error in opening %s for reading\n",path);
 			}
 		}
 
@@ -335,7 +336,7 @@ int zip(RPS* basePtr, char zipFileName[])
 				if (size_read < size_buf)
 					if (feof(fin)==0)
 					{
-						printf("error in reading %s\n",basePtr->name);
+						printf("error in reading %s\n",path);
 						err = ZIP_ERRNO;
 					}
 				
@@ -343,7 +344,7 @@ int zip(RPS* basePtr, char zipFileName[])
 				{
 					err = zipWriteInFileInZip (zf,buf,size_read);
 					if (err<0)
-						printf("error in writing %s in the zipfile\n", basePtr->name);
+						printf("error in writing %s in the zipfile\n", path);
 					
 				}
 			} while (err == ZIP_OK && size_read > 0);
@@ -355,7 +356,7 @@ int zip(RPS* basePtr, char zipFileName[])
 		if (err<0)
 			err=ZIP_ERRNO;
 		else if ((err = zipCloseFileInZip(zf)) !=ZIP_OK)
-			printf("error in closing %s in the zipfile\n", basePtr->name);
+			printf("error in closing %s in the zipfile\n", path);
 	}
 	errclose = zipClose(zf,NULL);
 	if (errclose != ZIP_OK)

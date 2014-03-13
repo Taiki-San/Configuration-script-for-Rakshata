@@ -38,20 +38,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 #define MAX_PATH 256
 
-typedef struct RPS RPS;
-
-struct RPS		//RenamePageStructure
+typedef struct renamePageStructure
 {
 	char name[MAX_PATH];
 	bool isPng;
-	RPS * next;
-};
+	void * next;
+}RPS;
 
 #define crashTemp(string, length) memset(string, 0, length)
 int compare(const void *a, const void *b);
 
 /*Scripts*/
 int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose);
-int zip(RPS* basePtr, char zipFileName[]);
+int zip(char* basePath, RPS* basePtr, char* zipFileName);
 
 char getCh();

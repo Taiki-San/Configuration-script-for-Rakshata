@@ -161,13 +161,7 @@ static int strnatcmp0(char const *a, char const *b, int fold_case)
      }
 }
 
-static int strnatcmp(char const *a, char const *b) {
-     return strnatcmp0(a, b, 0);
-}
-
 int compare(const void *a, const void *b)
 {
-     const RPS *pa = a;
-     const RPS *pb = b;
-	 return strnatcmp(pa->name, pb->name);
+	return strnatcmp0((*((const RPS**)a))->name, (*((const RPS**)b))->name, 0);	//Magic
 }
