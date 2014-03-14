@@ -102,7 +102,6 @@ int main(int argc, char *argv[])
 		snprintf(archiveName, sizeof(archiveName), "%s_Chapitre_X.zip", prefixArchive);
 		worker(".", archiveName, askConfirm, askConfirm);
 	}
-
     return 0;
 }
 

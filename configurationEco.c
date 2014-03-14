@@ -37,7 +37,6 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	char path[2][lengthInput + MAX_PATH], *localString;
 	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr, *prev = NULL;	//We have a small logic issue that will make us allocate one extra entry, but no leak, so not critical
 	
-
     //Initialisateurs pour le renommage de chapitre
     struct dirent *ent;
     DIR *dir;
