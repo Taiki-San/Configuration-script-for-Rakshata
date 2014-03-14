@@ -35,7 +35,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	uint64_t lengthInput = strlen(basePath);
 	bool keepRunning = false, jpgOnly;
 	char path[2][lengthInput + MAX_PATH], *localString;
-	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr;	//We have a small logic issue that will make us allocate one extra entry, but no leak, so not critical
+	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr, *prev = NULL;	//We have a small logic issue that will make us allocate one extra entry, but no leak, so not critical
 	
 
     //Initialisateurs pour le renommage de chapitre
@@ -94,32 +94,32 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 				}
 				
 				curPtr->next = malloc(sizeof(RPS));
+				prev = curPtr;
 				curPtr = curPtr->next;
 				nbElem++;
 			}
-			if(curPtr != NULL)
-				curPtr->next = NULL;
-						
+									
 			closedir (dir);
 			
 			if (nbElem)
 			{
+				if(prev != NULL)
+				{
+					free(prev->next);
+					prev->next = NULL;
+					nbElem--;
+				}
+				
+				
 				RPS* buf[nbElem];
 				for (i = 0, curPtr = basePtr; curPtr->next != NULL; curPtr = curPtr->next, i++)
 					buf[i] = curPtr;
 				
-				printf("%p - %lu - %s\n", buf[0], sizeof(buf[0]), buf[0]->name);
 				qsort(buf, i, sizeof(RPS*), compare);
 				
-				for (i = 0, basePtr = curPtr; i < nbElem; curPtr = curPtr->next, i++)
-				{
-					curPtr = buf[i];
-					puts(curPtr->name);
-				}
-				puts("Ok");
-				exit(0);
+				for (i = 1, basePtr = curPtr = buf[0]; i < nbElem; curPtr = curPtr->next, i++)
+					curPtr->next = buf[i];
 				
-				curPtr = buf[i];
 				curPtr->next = NULL;
 				
 				if(verbose)
@@ -157,7 +157,8 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 					else
 						snprintf(path[1], sizeof(path), "%s/%d.jpg", basePath, i);
 					
-					rename(path[0], path[1]);
+					if(strcmp(path[0], path[1]))
+						rename(path[0], path[1]);
 					strncpy(curPtr->name, &path[1][lengthInput+1], sizeof(curPtr->name));
 				}
 			}
@@ -201,11 +202,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 		printf("L'archive sera nomee %s. Remplacez Pr par \n", archiveName);
 	}
 	
-	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next)	//On va à la fin de la liste
-	{
-		puts(curPtr->name);
-	}
-	puts("\n\n");
+	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next);	//On va à la fin de la liste
 	
 	curPtr->next = malloc(sizeof(RPS));								//On ajoute le config.dat à la liste
 	if(curPtr->next == NULL)

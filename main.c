@@ -33,10 +33,10 @@ char REPERTOIREEXECUTION[250];
 void printHelp()
 {
 	puts("Help:\n");
-	puts("-help		|		print this help");
-	puts("-batch		|		will assume every directory in the current directory contain a chapter, and manage them all at once");
-	puts("-prefix X	|		change the default prefix (Pr) to the one provided afterward (X here)");
-	puts("-AC		|		will ask a confirmation before renaming files and creating the zipfile");
+	puts("-help		|	print this help");
+	puts("-batch		|	will assume every directory in the current directory contain a chapter, and manage them all at once");
+	puts("-prefix X	|	change the default prefix (Pr) to the one provided afterward (X here)");
+	puts("-AC		|	will ask a confirmation before renaming files and creating the zipfile");
 }
 
 int main(int argc, char *argv[])
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	chdir(REPERTOIREEXECUTION);
 #endif
 
-	bool batchMode = true, askConfirm = false;
+	bool batchMode = false, askConfirm = false;
 	char prefixArchive[50] = "Pr";
 	
 	for(int pos = 1; pos < argc; pos++)
