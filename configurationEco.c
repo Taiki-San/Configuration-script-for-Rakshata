@@ -30,17 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 {
-    FILE* config = NULL;
-	uint nbElem, length, i;
+    uint nbElem, length, i;
 	uint64_t lengthInput = strlen(basePath);
 	bool keepRunning = false, jpgOnly;
 	char path[2][lengthInput + MAX_PATH], *localString;
-	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr, *prev = NULL;	//We have a small logic issue that will make us allocate one extra entry, but no leak, so not critical
-	
-    //Initialisateurs pour le renommage de chapitre
-    struct dirent *ent;
-    DIR *dir;
 
+	void* buf;
+    struct dirent *ent;
+    FILE *config;
+	DIR *dir;
+	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr, *prev = NULL;
+	basePtr->next = NULL;
+	
 	do
 	{
 		dir = opendir (basePath);
@@ -170,7 +171,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	if(!nbElem)
 	{
 		puts("Aucune page valide trouvée :/\n");
-		return 0;
+		goto cleanup;
 	}
 	
 	snprintf(path[0], sizeof(path[0]), "%s/config.dat", basePath);
@@ -179,7 +180,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	if(config == NULL)
 	{
 		puts("Failed at open config file");
-		return 0;
+		goto cleanup;
 	}
 	
 	if(jpgOnly)
@@ -212,18 +213,21 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	
 	curPtr = curPtr->next;
 	strncpy(curPtr->name, "config.dat", sizeof(curPtr->name));
+	curPtr->next = NULL;
 
 	snprintf(path[0], sizeof(path[0]), "%s/%s", basePath, archiveName);	//On modifie le path de l'archive
 	zip(basePath, basePtr, path[0]);
 	
-	void* buf;
+	printf("\nTermine.");
+	
+cleanup:
+	
 	for (curPtr = basePtr; curPtr; curPtr = buf)
 	{
 		buf = curPtr->next;
 		free(curPtr);
 	}
 	
-	printf("\nTermine.");
 	return 0;
 }
 

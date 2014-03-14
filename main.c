@@ -28,8 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 #include "main.h"
 
-char REPERTOIREEXECUTION[250];
-
 void printHelp()
 {
 	puts("Help:\n");
@@ -41,12 +39,12 @@ void printHelp()
 
 int main(int argc, char *argv[])
 {
-#ifdef _WIN32
-	getcwd(REPERTOIREEXECUTION, sizeof(REPERTOIREEXECUTION));
-#else
-    strncpy(REPERTOIREEXECUTION, argv[0], sizeof(REPERTOIREEXECUTION));
-	for(uint64_t i = strlen(REPERTOIREEXECUTION); REPERTOIREEXECUTION[i] != '/'; REPERTOIREEXECUTION[i--] = 0);
-	chdir(REPERTOIREEXECUTION);
+#ifndef _WIN32
+/*	uint64_t lengthPath = strlen(argv[0]);
+	char basePath[lengthPath+1];
+    strncpy(basePath, argv[0], sizeof(basePath));
+	for(; basePath[lengthPath] != '/'; basePath[lengthPath--] = 0);
+	chdir(basePath);*/
 #endif
 
 	bool batchMode = false, askConfirm = false;
@@ -102,6 +100,7 @@ int main(int argc, char *argv[])
 		snprintf(archiveName, sizeof(archiveName), "%s_Chapitre_X.zip", prefixArchive);
 		worker(".", archiveName, askConfirm, askConfirm);
 	}
+
     return 0;
 }
 
