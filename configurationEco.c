@@ -30,14 +30,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 
 int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 {
-    uint nbElem, length, i;
+	uint nbElem, length, i;
 	uint64_t lengthInput = strlen(basePath);
 	bool keepRunning = false, jpgOnly;
 	char path[2][lengthInput + MAX_PATH], *localString;
 
 	void* buf;
-    struct dirent *ent;
-    FILE *config;
+	struct dirent *ent;
+	FILE *config;
 	DIR *dir;
 	RPS *basePtr = malloc(sizeof(RPS)), *curPtr = basePtr, *prev = NULL;
 	basePtr->next = NULL;
@@ -45,7 +45,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	do
 	{
 		dir = opendir (basePath);
-		if (dir != NULL)
+		if(dir != NULL)
 		{
 			nbElem = 0;
 			jpgOnly = true;
@@ -64,7 +64,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 				localString = curPtr->name;					//This prevent the CPU to dereference the ptr each time
 				strncpy(localString, ent->d_name, MAX_PATH);
 				
-				for(length = 0; localString[length]; length++) //On compte le nombre de caractère et on en profite pour virer la casse
+				for (length = 0; localString[length]; length++) //On compte le nombre de caractère et on en profite pour virer la casse
 				{
 					if(localString[length] >= 'A' && localString[length] <= 'Z')
 						localString[length] = localString[length] - ('A' - 'a');
@@ -101,7 +101,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 									
 			closedir (dir);
 			
-			if (nbElem)
+			if(nbElem)
 			{
 				if(prev != NULL)
 				{
@@ -125,7 +125,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 				if(verbose)
 				{
 					puts("Fichiers classe:\n");
-					for(curPtr = basePtr,  i = 0; curPtr; i++, curPtr = curPtr->next)
+					for (curPtr = basePtr,  i = 0; curPtr; i++, curPtr = curPtr->next)
 						printf("%d. %s\n", i+1, curPtr->name);
 					
 					if(askConfirm)
@@ -148,7 +148,7 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 						puts("\n\n");
 				}
 				
-				for(i = 0, curPtr = basePtr; curPtr; i++, curPtr = curPtr->next)
+				for (i = 0, curPtr = basePtr; curPtr; i++, curPtr = curPtr->next)
 				{
 					snprintf(path[0], sizeof(path), "%s/%s", basePath, curPtr->name);
 					
@@ -184,12 +184,12 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	}
 	
 	if(jpgOnly)
-        fprintf(config, "%d", nbElem-1);
+        	fprintf(config, "%d", nbElem-1);
 
 	else
 	{
 		fprintf(config, "%d\nN", nbElem);
-		for(curPtr = basePtr, i = 0; curPtr; curPtr = curPtr->next, i++)
+		for (curPtr = basePtr, i = 0; curPtr; curPtr = curPtr->next, i++)
 			fprintf(config, "\n%d %s", i+1, curPtr->name);
 	}
 	
