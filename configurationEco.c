@@ -107,12 +107,10 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 				{
 					free(prev->next);
 					prev->next = NULL;
-					nbElem--;
 				}
 				
-				
 				RPS* buf[nbElem];
-				for (i = 0, curPtr = basePtr; curPtr->next != NULL; curPtr = curPtr->next, i++)
+				for (i = 0, curPtr = basePtr; curPtr != NULL; curPtr = curPtr->next, i++)
 					buf[i] = curPtr;
 				
 				qsort(buf, i, sizeof(RPS*), compare);
