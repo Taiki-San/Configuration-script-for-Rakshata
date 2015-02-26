@@ -197,7 +197,6 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	if(verbose)
 	{
 		puts("Renommage termine. Compression prete au lancement.\n");
-		printf("L'archive sera nomee %s. Remplacez Pr par \n", archiveName);
 	}
 	
 	for (curPtr = basePtr; curPtr->next; curPtr = curPtr->next);	//On va à la fin de la liste

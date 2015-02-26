@@ -31,37 +31,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.**/
 void printHelp()
 {
 	puts("Help:\n");
-	puts("-help		|	print this help");
-	puts("-batch		|	will assume every directory in the current directory contain a chapter, and manage them all at once");
-	puts("-prefix X	|	change the default prefix (Pr) to the one provided afterward (X here)");
-	puts("-AC		|	will ask a confirmation before renaming files and creating the zipfile");
+	puts("--help		|	print this help");
+	puts("--batch		|	will assume every directory in the current directory contain a chapter, and manage them all at once");
+	puts("--askConfirm	|	will ask a confirmation before renaming files and creating the zipfile");
 }
 
 int main(int argc, char *argv[])
 {
-#ifndef _WIN32
-/*	uint64_t lengthPath = strlen(argv[0]);
-	char basePath[lengthPath+1];
-    strncpy(basePath, argv[0], sizeof(basePath));
-	for(; basePath[lengthPath] != '/'; basePath[lengthPath--] = 0);
-	chdir(basePath);*/
-#endif
-
 	bool batchMode = false, askConfirm = false;
-	char prefixArchive[50] = "Pr";
 	
 	for(int pos = 1; pos < argc; pos++)
 	{
-		if(!strcmp(argv[pos], "-batch"))
+		if(!strcmp(argv[pos], "--batch") || !strcmp(argv[pos], "-b"))
 			batchMode = true;
 		
-		else if(!strcmp(argv[pos], "-prefix") && pos+1 < argc)
-			strncpy(prefixArchive, argv[++pos], 50);
-		
-		else if(!strcmp(argv[pos], "-AC"))
+		else if(!strcmp(argv[pos], "--askConfirm") || !strcmp(argv[pos], "-a"))
 			askConfirm = true;
 		
-		else if(!strcmp(argv[pos], "-help"))
+		else if(!strcmp(argv[pos], "--help") || !strcmp(argv[pos], "-h"))
 		{
 			printHelp();
 			return 0;
@@ -87,7 +74,7 @@ int main(int argc, char *argv[])
 			{
 				closedir(test);
 				strncpy(basePath, entry->d_name, sizeof(basePath));
-				snprintf(archiveName, sizeof(archiveName), "../zip_files/%s_Chapitre_%s.zip", prefixArchive, entry->d_name);
+				snprintf(archiveName, sizeof(archiveName), "../zip_files/Chapitre_%s.zip", entry->d_name);
 				worker(basePath, archiveName, askConfirm, askConfirm);
 			}
 		}
@@ -95,11 +82,7 @@ int main(int argc, char *argv[])
 
 	}
 	else
-	{
-		char archiveName[0x100];
-		snprintf(archiveName, sizeof(archiveName), "%s_Chapitre_X.zip", prefixArchive);
-		worker(".", archiveName, askConfirm, askConfirm);
-	}
+		worker(".", "Chapitre_X.zip", askConfirm, askConfirm);
 
     return 0;
 }
