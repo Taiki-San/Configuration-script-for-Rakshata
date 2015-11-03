@@ -187,8 +187,8 @@ int worker(char * basePath, char * archiveName, bool askConfirm, bool verbose)
 	else
 	{
 		fprintf(config, "%d\nN", nbElem);
-		for (curPtr = basePtr, i = 0; curPtr; curPtr = curPtr->next, i++)
-			fprintf(config, "\n%d %s", i+1, curPtr->name);
+		for (curPtr = basePtr; curPtr; curPtr = curPtr->next)
+			fprintf(config, "\n0 %s", curPtr->name);
 	}
 	
 	fclose(config);
